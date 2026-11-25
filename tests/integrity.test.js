@@ -9,7 +9,7 @@ const { PassThrough } = require('stream');
 const Database = require('better-sqlite3');
 const bcrypt = require('bcrypt');
 
-const createApp = require('../src/app');
+const createApp = require('../src/backendApp');
 const { runMigrations } = require('../src/db/migrate');
 const { getDb } = require('../src/db/database');
 const { config, SETTINGS_METADATA } = require('../src/config');

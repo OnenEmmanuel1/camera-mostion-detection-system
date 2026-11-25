@@ -27,4 +27,4 @@ ENV APP_ENV=demo
 
 EXPOSE 3000
 
-CMD ["node", "src/server.js"]
+CMD ["node", "src/backendServer.js"]

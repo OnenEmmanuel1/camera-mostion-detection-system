@@ -1,7 +1,7 @@
 'use strict';
 
 const { config } = require('./config');
-const createApp = require('./app');
+const createApp = require('./backendApp');
 const { runMigrations } = require('./db/migrate');
 const { closeDb } = require('./db/database');
 const { MediaCaptureService } = require('./services/mediaCapture');
