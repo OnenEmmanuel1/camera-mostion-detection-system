@@ -1,0 +1,224 @@
+/* Shared mobile and tablet refinements. Keep the desktop console styling intact. */
+@media (max-width: 900px) {
+  .isss-workspace .isss-main {
+    padding: 16px;
+  }
+
+  .sv-page {
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+  }
+
+  .sv-body {
+    flex-direction: column;
+    overflow: visible;
+  }
+
+  .sv-centre {
+    flex: none;
+  }
+
+  .sv-player-wrap {
+    flex: none;
+    height: clamp(260px, 54vw, 560px);
+  }
+
+  .sv-sidebar {
+    display: flex;
+    width: 100%;
+    height: 320px;
+    border-left: 0;
+    border-top: 1px solid var(--sv-border);
+  }
+
+  .sv-feed-list {
+    min-height: 0;
+  }
+
+  .isss-console-grid > *,
+  .isss-camera-grid > * {
+    min-width: 0;
+  }
+}
+
+@media (max-width: 760px) {
+  .isss-app-shell {
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
+  .isss-sidebar {
+    padding: 10px 12px 7px;
+  }
+
+  .isss-sidebar-brand-block {
+    padding-bottom: 8px;
+  }
+
+  .isss-sidebar .isss-nav {
+    gap: 3px !important;
+    padding-bottom: 2px;
+  }
+
+  .isss-sidebar .isss-nav-link {
+    min-height: 42px;
+    padding-inline: 11px;
+    font-size: .82rem;
+  }
+
+  .isss-workspace .isss-header {
+    padding: 9px 12px;
+  }
+
+  .isss-header-status {
+    gap: 6px;
+  }
+
+  .isss-workspace .isss-main {
+    padding: 12px;
+  }
+
+  .isss-console-heading {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .isss-console-heading > .isss-console-button {
+    min-height: 40px;
+  }
+
+  .isss-camera-tile-footer {
+    flex-wrap: wrap;
+  }
+
+  .isss-camera-form input,
+  .isss-camera-form select,
+  .isss-workspace .form-control,
+  .isss-workspace .form-select {
+    min-height: 42px;
+    font-size: 16px;
+  }
+
+  .isss-table {
+    min-width: 600px;
+  }
+
+  .isss-workspace .table-responsive {
+    max-width: 100%;
+    overscroll-behavior-inline: contain;
+  }
+
+  .sv-topbar {
+    height: auto;
+    min-height: 48px;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 6px 10px;
+  }
+
+  .sv-tabs {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  .sv-tab-pill {
+    min-height: 38px;
+    flex: 0 0 auto;
+    padding-inline: 10px;
+    font-size: .78rem;
+  }
+
+  .sv-device-nav {
+    width: 100%;
+    justify-content: space-between;
+    padding: 3px 2px;
+  }
+
+  .sv-player-wrap {
+    height: clamp(230px, 58vw, 480px);
+  }
+
+  .sv-osd-top {
+    top: 8px;
+    left: 8px;
+    right: 8px;
+  }
+
+  .sv-controls {
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 8px;
+  }
+
+  .sv-progress-wrap {
+    min-width: 100%;
+    order: 2;
+  }
+
+  .sv-timeline-header {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .sv-timeline-actions {
+    margin-left: auto;
+  }
+
+  .sv-sidebar {
+    height: 280px;
+  }
+}
+
+@media (max-width: 420px) {
+  .isss-sidebar .isss-brand strong {
+    font-size: .9rem;
+  }
+
+  .isss-sidebar .isss-brand small {
+    font-size: .62rem;
+  }
+
+  .isss-sidebar .isss-nav-link {
+    padding-inline: 9px;
+    font-size: .76rem;
+  }
+
+  .isss-header-status .isss-badge {
+    font-size: .65rem;
+  }
+
+  .isss-workspace .isss-main {
+    padding: 10px;
+  }
+
+  .isss-camera-tile-heading {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .sv-device-nav > span:nth-of-type(1),
+  .sv-device-nav > span:nth-of-type(2) {
+    display: none;
+  }
+
+  .sv-player-wrap {
+    height: 56vw;
+    min-height: 210px;
+  }
+
+  .sv-controls > .sv-ctrl-btn {
+    width: 34px;
+    min-width: 34px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}

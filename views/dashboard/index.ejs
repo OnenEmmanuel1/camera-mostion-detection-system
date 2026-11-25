@@ -1,0 +1,156 @@
+<div id="isss-dashboard-container" class="isss-dashboard-console">
+  <header class="isss-console-heading">
+    <div>
+      <p class="isss-console-eyebrow">Surveillance workspace</p>
+      <h1>Overview</h1>
+    </div>
+    <a href="/cameras" class="isss-console-button">View all cameras <span aria-hidden="true">&rarr;</span></a>
+  </header>
+
+  <% if (status.storage_low) { %>
+    <div class="isss-storage-warning" role="alert">
+      <strong>Evidence recording paused: low storage.</strong>
+      Motion events are still logged, but image and video files cannot be saved until disk space is freed above the configured threshold.
+    </div>
+  <% } %>
+
+  <div class="isss-console-grid">
+    <section class="isss-console-panel isss-device-panel" aria-labelledby="device-panel-title">
+      <div class="isss-panel-heading">
+        <h2 id="device-panel-title">Device list</h2>
+        <span class="isss-panel-count"><%= cameras.length.toString().padStart(2, '0') %></span>
+      </div>
+
+      <% for (const camera of cameras.slice(0, 4)) { %>
+        <article class="isss-device-entry">
+          <span class="isss-device-indicator <%= camera.status.status === 'Connected' ? 'is-connected' : 'is-disconnected' %>" aria-hidden="true"></span>
+          <div class="isss-device-copy">
+            <strong class="isss-camera-id"><%= camera.device_name %></strong>
+            <span><%= camera.location_label || 'Location not set' %></span>
+          </div>
+          <span class="isss-device-state"><%= camera.status.status %></span>
+        </article>
+      <% } %>
+      <% if (cameras.length > 4) { %><a class="isss-panel-link" href="/cameras">View all <%= cameras.length %> cameras</a><% } %>
+
+      <dl class="isss-device-facts">
+        <div><dt>Detection</dt><dd><%= status.detection_enabled ? status.detection_method.replace('_', ' ') : 'Stopped' %></dd></div>
+        <div><dt>Network</dt><dd class="<%= status.network_connected ? 'is-good' : 'is-bad' %>"><%= status.network_connected ? 'Connected' : 'Disconnected' %></dd></div>
+        <div><dt>Storage</dt><dd class="<%= status.storage_low ? 'is-bad' : '' %>"><%= status.storage_free_percent %>% free</dd></div>
+        <% if (status.sensor_configured) { %>
+          <div><dt>Sensor</dt><dd class="<%= status.sensor_present ? 'is-good' : 'is-bad' %>"><%= status.sensor_status %></dd></div>
+        <% } %>
+      </dl>
+      <% if (status.camera_last_error) { %>
+        <p class="isss-device-error"><%= status.camera_last_error %></p>
+      <% } %>
+    </section>
+
+    <section class="isss-console-panel isss-camera-panel" aria-labelledby="camera-panel-title">
+      <div class="isss-panel-heading">
+        <div>
+          <h2 id="camera-panel-title">Camera preview</h2>
+          <p class="isss-camera-id"><%= cameras[0] ? cameras[0].device_name : 'No active camera' %></p>
+        </div>
+        <span class="isss-feed-state <%= status.camera_connected ? 'is-connected' : 'is-disconnected' %>"><span></span><%= status.camera_connected ? 'Connected' : 'Disconnected' %></span>
+      </div>
+      <div class="isss-console-preview" id="isss-camera-preview">
+        <img id="isss-dashboard-stream" src="/live/stream<%= cameras[0] ? `?device_id=${cameras[0].device_id}` : '' %>" alt="Live camera stream" onerror="this.style.display='none'; document.getElementById('isss-preview-empty').hidden = false;">
+        <video id="isss-browser-camera" class="isss-browser-camera" autoplay muted playsinline hidden aria-label="Your device camera preview"></video>
+        <canvas id="isss-browser-camera-canvas" hidden></canvas>
+        <div id="isss-preview-empty" class="isss-preview-empty" hidden>
+          <span class="isss-preview-mark" aria-hidden="true">ISSS</span>
+          <strong>Camera frame unavailable</strong>
+          <span>The camera may be disconnected or still starting.</span>
+        </div>
+      </div>
+      <div class="isss-preview-footer">
+        <div>
+          <button id="isss-camera-toggle" class="isss-camera-toggle" type="button" data-device-id="<%= cameras[0] ? cameras[0].device_id : '' %>" data-csrf-token="<%= csrfToken %>" <%= cameras.length ? '' : 'disabled' %>>Use this device camera</button>
+          <span id="isss-camera-test-status" role="status">Server camera feed</span>
+          <small class="isss-camera-recording-note">MP4 event clips are off by default. <% if (currentUser && currentUser.role === 'Administrator') { %>Enable Video Clip Recording in <a href="/settings">Settings</a>.<% } else { %>Ask an administrator to enable Video Clip Recording in Settings.<% } %></small>
+        </div>
+        <a href="/live">View live stream <span aria-hidden="true">&rarr;</span></a>
+      </div>
+    </section>
+
+    <section class="isss-console-panel isss-event-detail-panel" aria-labelledby="event-detail-title">
+      <div class="isss-panel-heading">
+        <h2 id="event-detail-title">Event details</h2>
+        <a href="/events" class="isss-panel-link">All events</a>
+      </div>
+      <% if (status.last_event) { %>
+        <a class="isss-featured-event" href="/events/<%= status.last_event.event_id %>">
+          <% if (status.last_event.media_path) { %>
+            <img src="/media/<%= status.last_event.event_id %>" alt="Still from the latest recorded event" loading="lazy">
+          <% } else { %>
+            <span class="isss-featured-empty">No still captured</span>
+          <% } %>
+          <span class="isss-featured-copy">
+            <strong>Motion detected</strong>
+            <span><%= new Date(status.last_event.start_time).toLocaleString() %></span>
+            <span><%= status.last_event.detection_type %> · <%= status.last_event.changed_area %>% changed area</span>
+          </span>
+          <span class="isss-featured-status"><%= status.last_event.review_status %></span>
+        </a>
+      <% } else { %>
+        <div class="isss-panel-empty">No events have been recorded yet.</div>
+      <% } %>
+
+      <div class="isss-heartbeat-row">
+        <span>Worker heartbeat</span>
+        <% if (status.heartbeat_stale) { %>
+          <strong class="is-bad">Stale · <%= status.heartbeat_age_seconds == null ? 'unknown' : `${status.heartbeat_age_seconds}s ago` %></strong>
+        <% } else { %>
+          <strong class="is-good">Active · <%= status.heartbeat_age_seconds || 0 %>s ago</strong>
+        <% } %>
+      </div>
+    </section>
+
+    <section class="isss-console-panel isss-recent-panel" aria-labelledby="recent-events-title">
+      <div class="isss-panel-heading">
+        <div>
+          <h2 id="recent-events-title">Recent activity</h2>
+          <p>Recorded motion events</p>
+        </div>
+        <span class="isss-panel-count"><%= recentEvents.length.toString().padStart(2, '0') %></span>
+      </div>
+      <% if (recentEvents.length) { %>
+        <div class="isss-event-grid">
+          <% for (const evt of recentEvents) { %>
+            <a href="/events/<%= evt.event_id %>" class="isss-event-card">
+              <div class="isss-event-image">
+                <% if (evt.media_path) { %>
+                  <img src="/media/<%= evt.event_id %>" alt="Event still" loading="lazy">
+                <% } else { %>
+                  <span>Media unavailable</span>
+                <% } %>
+                <span class="isss-event-tag"><%= evt.review_status %></span>
+              </div>
+              <div class="isss-event-card-copy">
+                <strong>Motion detected</strong>
+                <span><%= new Date(evt.start_time).toLocaleString() %></span>
+                <span><%= evt.detection_type %> · <%= evt.changed_area %>% area</span>
+              </div>
+            </a>
+          <% } %>
+        </div>
+      <% } else { %>
+        <div class="isss-panel-empty">No motion events recorded yet. Events will appear here when motion is detected.</div>
+      <% } %>
+    </section>
+
+    <section class="isss-console-panel isss-health-panel" aria-labelledby="health-panel-title">
+      <div class="isss-panel-heading">
+        <h2 id="health-panel-title">System health</h2>
+        <span class="isss-panel-caption">v<%= status.software_version %></span>
+      </div>
+      <dl class="isss-health-list">
+        <div><dt>Process memory</dt><dd><%= status.process_metrics.rssMb %> MB</dd></div>
+        <div><dt>Heap used</dt><dd><%= status.process_metrics.heapUsedMb %> MB</dd></div>
+        <div><dt>Process uptime</dt><dd><%= Math.floor(status.process_metrics.uptimeSeconds / 60) %> min</dd></div>
+        <div><dt>Network checked</dt><dd><%= status.network_checked_at ? new Date(status.network_checked_at).toLocaleTimeString() : 'Not checked' %></dd></div>
+      </dl>
+    </section>
+  </div>
+</div>

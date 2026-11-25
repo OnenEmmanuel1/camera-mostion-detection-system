@@ -1,0 +1,183 @@
+<% if (!event) { %>
+<div class="isss-card p-4">
+  <h1 class="h4">Event unavailable</h1>
+  <p class="text-muted"><%= error || 'This event could not be found.' %></p>
+  <a href="/events" class="isss-btn isss-btn-secondary">Back to Events</a>
+</div>
+<% } else { %>
+<div class="mb-3 d-flex justify-content-between align-items-center">
+  <div>
+    <a href="/events" class="text-decoration-none small text-muted">&larr; Back to Events</a>
+    <h4 class="fw-bold m-0 font-monospace">Event: <%= event.event_id %></h4>
+  </div>
+  <div>
+    <span class="isss-badge isss-badge-<%= event.review_status.toLowerCase() %>" style="font-size: 0.85rem; padding: 6px 12px;">
+      <span class="isss-dot"></span>
+      <span><%= event.review_status.toUpperCase() %></span>
+    </span>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Left Column: Evidence Media Display -->
+  <div class="col-lg-7">
+    <div class="isss-card p-3">
+      <h5 class="isss-card-title mb-3">Captured Evidence Media</h5>
+
+      <div class="isss-media-container">
+        <% if (event.media_path) { %>
+          <% const isVideo = event.media_path.endsWith('.mp4'); %>
+          <% if (isVideo) { %>
+            <video controls autoplay class="isss-media-player" src="/media/<%= event.event_id %>"></video>
+          <% } else { %>
+            <img class="isss-media-player" src="/media/<%= event.event_id %>" alt="Motion Still Capture" onerror="this.style.display='none'; document.getElementById('err-media').style.display='block';">
+            <div id="err-media" class="isss-media-unavailable" style="display:none;">
+              <h6>Media File Missing on Disk</h6>
+            <p class="small text-muted mb-0">Media unavailable. It may have been removed by retention or become inaccessible.</p>
+            </div>
+          <% } %>
+        <% } else { %>
+          <div class="isss-media-unavailable">
+            <h6 class="text-warning">Media Unavailable</h6>
+            <p class="small text-muted mb-0">
+              Media was not captured for this event because recording was disabled, low storage threshold was triggered, or capture timed out.
+            </p>
+          </div>
+        <% } %>
+      </div>
+
+      <div class="mt-3 d-flex justify-content-between align-items-center text-muted small">
+        <div>
+          Media: <%= event.media_path ? 'Available' : 'Unavailable' %>
+        </div>
+        <% if (event.media_path) { %>
+          <a href="/media/<%= event.event_id %>" download="<%= event.event_id %>" class="isss-btn isss-btn-secondary py-1 px-2" style="font-size: 0.75rem;">
+            Download Media
+          </a>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- Review Status Action Form -->
+    <div class="isss-card p-3">
+      <h5 class="isss-card-title mb-2">Review Status Workflow</h5>
+      <p class="text-muted small">
+        Marking events as <strong>FalseAlarm</strong> is how false-positive rates are accurately measured in practice.
+      </p>
+
+      <form action="/events/<%= event.event_id %>/status" method="POST" class="d-flex align-items-center gap-3">
+        <% if (locals.csrfToken) { %>
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <% } %>
+
+        <div class="flex-grow-1">
+          <select name="review_status" class="form-select">
+            <option value="New" <%= event.review_status === 'New' ? 'selected' : '' %>>New (Unreviewed)</option>
+            <option value="Reviewed" <%= event.review_status === 'Reviewed' ? 'selected' : '' %>>Reviewed (Confirmed Motion)</option>
+            <option value="FalseAlarm" <%= event.review_status === 'FalseAlarm' ? 'selected' : '' %>>False Alarm (Spurious Motion)</option>
+          </select>
+        </div>
+
+        <button type="submit" class="isss-btn isss-btn-primary py-2 px-3">
+          Update Review Status
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Right Column: Metadata & Notifications -->
+  <div class="col-lg-5">
+    <div class="isss-card p-3 mb-4">
+      <h5 class="isss-card-title mb-3">Event Telemetry</h5>
+      <table class="table table-sm table-borderless m-0">
+        <tbody>
+          <tr>
+            <td class="text-muted">Start Time (UTC):</td>
+            <td class="font-monospace fw-semibold"><%= event.start_time %></td>
+          </tr>
+          <tr>
+            <td class="text-muted">End Time (UTC):</td>
+            <td class="font-monospace"><%= event.end_time || 'Ongoing / Unfinalized' %></td>
+          </tr>
+          <tr>
+            <td class="text-muted">Duration:</td>
+            <td class="font-monospace">
+              <% if (event.end_time) { %>
+                <%= ((new Date(event.end_time) - new Date(event.start_time)) / 1000).toFixed(1) %> seconds
+              <% } else { %>
+                In progress
+              <% } %>
+            </td>
+          </tr>
+          <tr>
+            <td class="text-muted">Detection Method:</td>
+            <td><span class="badge bg-light text-dark border"><%= event.detection_type %></span></td>
+          </tr>
+          <tr>
+            <td class="text-muted">Peak Changed Area:</td>
+            <td class="font-monospace fw-bold text-primary"><%= event.changed_area %>%</td>
+          </tr>
+          <tr>
+            <td class="text-muted">Origin Device:</td>
+            <td><%= event.device_name || 'Node 1' %> (<%= event.location_label || 'Default' %>)</td>
+          </tr>
+          <tr>
+            <td class="text-muted">Record Created:</td>
+            <td class="font-monospace text-muted small"><%= event.created_at %></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Notification Outcomes Log (Flagged Gap Addition, Section 4.2.3 & 6) -->
+    <div class="isss-card p-3">
+      <h5 class="isss-card-title mb-2">Notification Outcomes</h5>
+      <p class="text-muted small mb-3">
+        Audited dispatch outcomes. "AcceptedByProvider" indicates handover to the external mail or Telegram server, distinct from recipient delivery.
+      </p>
+
+      <% if (!event.notifications || event.notifications.length === 0) { %>
+        <p class="text-muted small m-0 fst-italic">No notification records dispatched for this event.</p>
+      <% } else { %>
+        <div class="table-responsive">
+          <table class="table table-sm m-0">
+            <thead>
+              <tr class="small text-muted">
+                <th>Channel</th>
+                <th>Outcome</th>
+                <th>Attempted (UTC)</th>
+                <th>Accepted (UTC)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% for (const n of event.notifications) { %>
+                <tr class="small">
+                  <td class="fw-semibold"><%= n.channel %></td>
+                  <td>
+                    <% if (n.outcome === 'AcceptedByProvider') { %>
+                      <span class="badge bg-success-subtle text-success">Accepted</span>
+                    <% } else if (n.outcome === 'Suppressed') { %>
+                      <span class="badge bg-light text-dark border">Suppressed</span>
+                    <% } else { %>
+                      <span class="badge bg-danger-subtle text-danger">Failed</span>
+                    <% } %>
+                  </td>
+                  <td class="font-monospace text-muted"><%= new Date(n.attempted_at).toLocaleTimeString() %></td>
+                  <td class="font-monospace text-muted"><%= n.provider_accepted_at ? new Date(n.provider_accepted_at).toLocaleTimeString() : 'N/A' %></td>
+                </tr>
+                <% if (n.detail) { %>
+                  <tr>
+                    <td colspan="4" class="text-muted small border-0 pt-0 pb-2 fst-italic">
+                      Detail: <%= n.detail %>
+                    </td>
+                  </tr>
+                <% } %>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</div>
+<% } %>

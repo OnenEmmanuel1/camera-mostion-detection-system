@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= pageTitle || 'ISSS - IoT Surveillance System' %></title>
+  
+  <!-- CSS Design Tokens & Styles -->
+  <link rel="stylesheet" href="/public/css/tokens.css?v=console-20261123-4">
+  <link rel="stylesheet" href="/public/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/public/fonts/inter.css">
+  <link rel="stylesheet" href="/public/css/isss.css?v=console-20261124-12">
+  <link rel="stylesheet" href="/public/css/surveillance.css?v=console-20261123-4">
+  <link rel="stylesheet" href="/public/css/responsive.css?v=responsive-20261125-1">
+</head>
+<body>
+
+  <% if (typeof currentUser !== 'undefined' && currentUser) { %>
+    <div class="isss-app-shell">
+      <aside class="isss-sidebar" aria-label="Main sidebar">
+        <%- include('../partials/nav') %>
+        <div class="isss-sidebar-foot">
+          <span class="isss-sidebar-foot-label">Signed in as</span>
+          <strong><%= currentUser.username %></strong>
+          <span><%= currentUser.role %></span>
+        </div>
+      </aside>
+      <div class="isss-workspace">
+        <%- include('../partials/header') %>
+        <main class="isss-main">
+          <%- include('../partials/alerts') %>
+          <%- include('../' + view) %>
+        </main>
+        <%- include('../partials/footer') %>
+      </div>
+    </div>
+  <% } else { %>
+    <main class="isss-main">
+      <%- include('../partials/alerts') %>
+      <%- include('../' + view) %>
+    </main>
+    <%- include('../partials/footer') %>
+  <% } %>
+
+  <!-- Scripts -->
+  <script src="/public/js/bootstrap.bundle.min.js"></script>
+  <script src="/public/js/isss.js?v=multi-camera-2"></script>
+</body>
+</html>

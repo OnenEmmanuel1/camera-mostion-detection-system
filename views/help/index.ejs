@@ -1,0 +1,98 @@
+<div class="mb-4">
+  <h4 class="fw-bold m-0">Documentation & System Guidance</h4>
+  <p class="text-muted small m-0">Reference documentation, hardware checklist, false alarm mitigation, and privacy guidelines</p>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-8">
+    <!-- Architecture & Processing Pipeline -->
+    <div class="isss-card mb-4">
+      <h5 class="isss-card-title border-bottom pb-2">1. Processing Pipeline Architecture</h5>
+      <p class="small text-muted">
+        ISSS is structured into decoupled modules running concurrently. The video acquisition and detection pipeline executes in an isolated <code>worker_threads</code> thread, ensuring that frame processing and differencing never block Express HTTP request handling.
+      </p>
+
+      <div class="bg-light p-3 rounded font-monospace small mb-3 border">
+        FrameSource (USB/V4L2 / RTSP / File)<br>
+        &nbsp;&nbsp;&darr; (JPEG Frames)<br>
+        Preprocessing (Sharp 320x240, Grayscale, Gaussian Noise Blur)<br>
+        &nbsp;&nbsp;&darr; (Raw 8-bit Luminance Buffer)<br>
+        Detector (Frame Difference / Running Average + Ignore Mask)<br>
+        &nbsp;&nbsp;&darr; (Changed Area %)<br>
+        Event Manager (Persistence &ge; N, Cooldown, Lifecycle State)<br>
+        &nbsp;&nbsp;&darr;<br>
+        Media Capture (Media-First Write to Disk) &rarr; SQLite Event Insert &rarr; Notifications (Email / Telegram)
+      </div>
+
+      <h6 class="fw-bold small">Media-First Write Guarantee (Section 4.2.4 & 4.3.3)</h6>
+      <p class="small text-muted mb-0">
+        Still captures (and optional clips) are written to persistent disk storage first. If disk write fails or storage falls below the low storage threshold, the event is recorded with <code>media_path = null</code>. The database never contains references to nonexistent media files.
+      </p>
+    </div>
+
+    <!-- Hardware Setup Checklist -->
+    <div class="isss-card mb-4">
+      <h5 class="isss-card-title border-bottom pb-2">2. Raspberry Pi Hardware Checklist</h5>
+      <ol class="small text-muted ps-3 mb-0">
+        <li class="mb-2">
+          <strong>Identify Camera Device:</strong> Run <code>v4l2-ctl --list-devices</code> to list connected USB or CSI camera nodes (typically <code>/dev/video0</code>).
+        </li>
+        <li class="mb-2">
+          <strong>Grant User Video Permissions:</strong> Add your service user to the video group: <code>sudo usermod -aG video $USER</code>.
+        </li>
+        <li class="mb-2">
+          <strong>Configure Environment:</strong> Set <code>CAMERA_TYPE=usb</code> and <code>CAMERA_PATH=/dev/video0</code> in your <code>.env</code> file.
+        </li>
+        <li class="mb-2">
+          <strong>Ensure FFmpeg is Installed:</strong> Run <code>ffmpeg -version</code>. On Debian/Raspberry Pi OS, run <code>sudo apt-get install -y ffmpeg</code>.
+        </li>
+        <li>
+          <strong>Optional PIR Sensor:</strong> Connect PIR sensor OUT pin to Raspberry Pi GPIO pin 17 (pin 11 physical) with 3.3V power and ground. Set mode to <code>camera_and_pir</code> in Settings.
+        </li>
+      </ol>
+    </div>
+
+    <!-- False Alarm Reduction Guide -->
+    <div class="isss-card mb-4">
+      <h5 class="isss-card-title border-bottom pb-2">3. False Alarm Tuning Guide</h5>
+      <ul class="small text-muted ps-3 mb-0">
+        <li class="mb-2">
+          <strong>Ignore Regions:</strong> If an oscillating fan, digital clock, or swaying outdoor tree is in view, add rectangular ignore coordinates in Settings to exclude those pixels from motion calculations.
+        </li>
+        <li class="mb-2">
+          <strong>Persistence Frames:</strong> If insects flying past or momentary camera sensor glitches cause false positives, increase <code>persistence_frames</code> from 3 to 5-8 frames.
+        </li>
+        <li class="mb-2">
+          <strong>Running Average Model:</strong> In outdoor environments with passing clouds or sun angle changes, use <code>running_average</code> detection instead of <code>frame_difference</code> to allow gradual ambient light shifts to be absorbed into the background model.
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <!-- Responsible Use & Privacy Policy -->
+    <div class="isss-card border-warning-subtle mb-4">
+      <h5 class="isss-card-title text-warning-emphasis">Responsible Use & Privacy Policy</h5>
+      <p class="small text-muted mb-2">
+        This edge surveillance system is privacy-sensitive. Adhere strictly to responsible deployment principles:
+      </p>
+      <ul class="small text-muted ps-3 mb-3">
+        <li class="mb-1">Post clear signage notifying occupants when surveillance is active.</li>
+        <li class="mb-1">Position cameras strictly within private property boundaries; avoid viewing public streets or neighbouring dwellings.</li>
+        <li class="mb-1">Enforce the automated retention policy (default 14 days) to prevent permanent footage accumulation.</li>
+        <li class="mb-1">Do not expose port 3000 directly to the open internet; require a VPN (e.g. WireGuard/Tailscale) or authenticated reverse proxy.</li>
+      </ul>
+      <div class="alert alert-warning py-2 small mb-0">
+        <strong>Academic Disclaimer:</strong> This system is a prototype developed for educational and research evaluation. It is not a certified commercial life-safety or alarm product.
+      </div>
+    </div>
+
+    <!-- Timezone Policy -->
+    <div class="isss-card">
+      <h5 class="isss-card-title">Timezone Policy</h5>
+      <p class="small text-muted mb-0">
+        All database timestamps (events, notifications, audits) are recorded strictly in standard <strong>UTC ISO-8601</strong>. Display formatting in the browser is presented in the configured <code><%= config.DISPLAY_TZ %></code> timezone.
+      </p>
+    </div>
+  </div>
+</div>

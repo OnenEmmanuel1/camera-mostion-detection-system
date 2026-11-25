@@ -1,0 +1,226 @@
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h4 class="fw-bold m-0">System Configuration</h4>
+    <p class="text-muted small m-0">Tuning detector parameters, event lifecycle, storage retention, and access control</p>
+  </div>
+  <div>
+    <span class="badge bg-primary">Administrator Only</span>
+  </div>
+</div>
+
+<% if (locals.retentionMessage) { %>
+  <div class="alert alert-info py-2 small mb-3">
+    <%= retentionMessage %>
+  </div>
+<% } %>
+
+<form action="/settings" method="POST">
+  <% if (locals.csrfToken) { %>
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <% } %>
+
+  <!-- Section 1: Motion Detection Algorithm & Fusion -->
+  <div class="isss-card mb-4">
+    <h5 class="isss-card-title border-bottom pb-2 mb-3">1. Motion Detector & Fusion Settings</h5>
+
+    <div class="row g-3">
+      <!-- detection_enabled -->
+      <div class="col-md-4">
+        <label class="form-label small fw-semibold"><%= metadata.detection_enabled.label %></label>
+        <select name="detection_enabled" class="form-select form-select-sm">
+          <option value="1" <%= settings.detection_enabled.value ? 'selected' : '' %>>Enabled (Active)</option>
+          <option value="0" <%= !settings.detection_enabled.value ? 'selected' : '' %>>Disabled (Paused)</option>
+        </select>
+        <div class="text-muted small mt-1"><%= metadata.detection_enabled.description %></div>
+        <span class="badge bg-light text-dark border mt-1">Applies Live</span>
+      </div>
+
+      <!-- detection_method -->
+      <div class="col-md-4">
+        <label class="form-label small fw-semibold"><%= metadata.detection_method.label %></label>
+        <select name="detection_method" class="form-select form-select-sm">
+          <option value="frame_difference" <%= settings.detection_method.value === 'frame_difference' ? 'selected' : '' %>>Frame Differencing</option>
+          <option value="running_average" <%= settings.detection_method.value === 'running_average' ? 'selected' : '' %>>Running Average Background</option>
+        </select>
+        <div class="text-muted small mt-1"><%= metadata.detection_method.description %></div>
+        <span class="badge bg-light text-dark border mt-1">Applies Live</span>
+      </div>
+
+      <!-- detection_mode -->
+      <div class="col-md-4">
+        <label class="form-label small fw-semibold"><%= metadata.detection_mode.label %></label>
+        <select name="detection_mode" class="form-select form-select-sm">
+          <option value="camera_only" <%= settings.detection_mode.value === 'camera_only' ? 'selected' : '' %>>Camera Only (Default)</option>
+          <option value="camera_and_pir" <%= settings.detection_mode.value === 'camera_and_pir' ? 'selected' : '' %>>Camera + PIR (Both must agree)</option>
+          <option value="camera_or_pir" <%= settings.detection_mode.value === 'camera_or_pir' ? 'selected' : '' %>>Camera OR PIR (Either triggers)</option>
+          <option value="pir_only" <%= settings.detection_mode.value === 'pir_only' ? 'selected' : '' %>>PIR Only</option>
+        </select>
+        <div class="text-muted small mt-1"><%= metadata.detection_mode.description %></div>
+        <span class="badge bg-light text-dark border mt-1">Applies Live</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 2: Sensitivity, Thresholds & Persistence -->
+  <div class="isss-card mb-4">
+    <h5 class="isss-card-title border-bottom pb-2 mb-3">2. Detection Sensitivity & Thresholds</h5>
+
+    <div class="row g-3">
+      <!-- pixel_threshold -->
+      <div class="col-md-4">
+        <label class="form-label small fw-semibold"><%= metadata.pixel_threshold.label %></label>
+        <input type="number" name="pixel_threshold" class="form-control form-control-sm" value="<%= settings.pixel_threshold.value %>" min="1" max="255">
+        <div class="text-muted small mt-1"><%= metadata.pixel_threshold.description %></div>
+        <span class="badge bg-light text-dark border mt-1">Applies Live</span>
+      </div>
+
+      <!-- min_changed_area -->
+      <div class="col-md-4">
+        <label class="form-label small fw-semibold"><%= metadata.min_changed_area.label %></label>
+        <input type="number" step="0.01" name="min_changed_area" class="form-control form-control-sm" value="<%= settings.min_changed_area.value %>" min="0.01" max="50.0">
+        <div class="text-muted small mt-1"><%= metadata.min_changed_area.description %></div>
+        <span class="badge bg-light text-dark border mt-1">Applies Live</span>
+      </div>
+
+      <!-- persistence_frames -->
+      <div class="col-md-4">
+        <label class="form-label small fw-semibold"><%= metadata.persistence_frames.label %></label>
+        <input type="number" name="persistence_frames" class="form-control form-control-sm" value="<%= settings.persistence_frames.value %>" min="1" max="30">
+        <div class="text-muted small mt-1"><%= metadata.persistence_frames.description %></div>
+        <span class="badge bg-light text-dark border mt-1">Applies Live</span>
+      </div>
+
+      <!-- quiet_interval_seconds -->
+      <div class="col-md-4">
+        <label class="form-label small fw-semibold"><%= metadata.quiet_interval_seconds.label %></label>
+        <input type="number" name="quiet_interval_seconds" class="form-control form-control-sm" value="<%= settings.quiet_interval_seconds.value %>" min="1" max="300">
+        <div class="text-muted small mt-1"><%= metadata.quiet_interval_seconds.description %></div>
+        <span class="badge bg-light text-dark border mt-1">Applies Live</span>
+      </div>
+
+      <!-- notification_cooldown_seconds -->
+      <div class="col-md-4">
+        <label class="form-label small fw-semibold"><%= metadata.notification_cooldown_seconds.label %></label>
+        <input type="number" name="notification_cooldown_seconds" class="form-control form-control-sm" value="<%= settings.notification_cooldown_seconds.value %>" min="0" max="3600">
+        <div class="text-muted small mt-1"><%= metadata.notification_cooldown_seconds.description %></div>
+        <span class="badge bg-light text-dark border mt-1">Applies Live</span>
+      </div>
+
+      <!-- detection_fps -->
+      <div class="col-md-4">
+        <label class="form-label small fw-semibold"><%= metadata.detection_fps.label %></label>
+        <input type="number" name="detection_fps" class="form-control form-control-sm" value="<%= settings.detection_fps.value %>" min="1" max="15">
+        <div class="text-muted small mt-1"><%= metadata.detection_fps.description %></div>
+        <span class="badge bg-warning-subtle text-warning-emphasis border mt-1">Applies on Worker Restart</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 3: Media Recording, Storage & Retention -->
+  <div class="isss-card mb-4">
+    <h5 class="isss-card-title border-bottom pb-2 mb-3">3. Media Capture, Storage & Retention</h5>
+
+    <div class="row g-3">
+      <!-- recording_enabled -->
+      <div class="col-md-3">
+        <label class="form-label small fw-semibold"><%= metadata.recording_enabled.label %></label>
+        <select name="recording_enabled" class="form-select form-select-sm">
+          <option value="1" <%= settings.recording_enabled.value ? 'selected' : '' %>>Enabled</option>
+          <option value="0" <%= !settings.recording_enabled.value ? 'selected' : '' %>>Disabled</option>
+        </select>
+        <div class="text-muted small mt-1"><%= metadata.recording_enabled.description %></div>
+      </div>
+
+      <!-- clips_enabled -->
+      <div class="col-md-3">
+        <label class="form-label small fw-semibold"><%= metadata.clips_enabled.label %></label>
+        <select name="clips_enabled" class="form-select form-select-sm">
+          <option value="1" <%= settings.clips_enabled.value ? 'selected' : '' %>>Enabled</option>
+          <option value="0" <%= !settings.clips_enabled.value ? 'selected' : '' %>>Disabled (Stills only)</option>
+        </select>
+        <div class="text-muted small mt-1"><%= metadata.clips_enabled.description %></div>
+      </div>
+
+      <!-- retention_days -->
+      <div class="col-md-3">
+        <label class="form-label small fw-semibold"><%= metadata.retention_days.label %></label>
+        <input type="number" name="retention_days" class="form-control form-control-sm" value="<%= settings.retention_days.value %>" min="1" max="365">
+        <div class="text-muted small mt-1"><%= metadata.retention_days.description %></div>
+      </div>
+
+      <!-- low_storage_threshold_percent -->
+      <div class="col-md-3">
+        <label class="form-label small fw-semibold"><%= metadata.low_storage_threshold_percent.label %></label>
+        <input type="number" name="low_storage_threshold_percent" class="form-control form-control-sm" value="<%= settings.low_storage_threshold_percent.value %>" min="1" max="50">
+        <div class="text-muted small mt-1"><%= metadata.low_storage_threshold_percent.description %></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 4: Live View & Permissions -->
+  <div class="isss-card mb-4">
+    <h5 class="isss-card-title border-bottom pb-2 mb-3">4. Live Stream & Role Access</h5>
+
+    <div class="row g-3">
+      <!-- live_view_enabled -->
+      <div class="col-md-6">
+        <label class="form-label small fw-semibold"><%= metadata.live_view_enabled.label %></label>
+        <select name="live_view_enabled" class="form-select form-select-sm">
+          <option value="1" <%= settings.live_view_enabled.value ? 'selected' : '' %>>Enabled</option>
+          <option value="0" <%= !settings.live_view_enabled.value ? 'selected' : '' %>>Disabled</option>
+        </select>
+        <div class="text-muted small mt-1"><%= metadata.live_view_enabled.description %></div>
+      </div>
+
+      <!-- live_view_viewer_access -->
+      <div class="col-md-6">
+        <label class="form-label small fw-semibold"><%= metadata.live_view_viewer_access.label %></label>
+        <select name="live_view_viewer_access" class="form-select form-select-sm">
+          <option value="1" <%= settings.live_view_viewer_access.value ? 'selected' : '' %>>Permitted</option>
+          <option value="0" <%= !settings.live_view_viewer_access.value ? 'selected' : '' %>>Restricted to Administrators</option>
+        </select>
+        <div class="text-muted small mt-1"><%= metadata.live_view_viewer_access.description %></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 5: Ignore Regions Masking -->
+  <div class="isss-card mb-4">
+    <h5 class="isss-card-title border-bottom pb-2 mb-3">5. Ignore Regions (Noise Masking)</h5>
+    <div class="mb-2">
+      <label class="form-label small fw-semibold"><%= metadata.ignore_regions.label %></label>
+      <textarea name="ignore_regions" rows="4" class="form-control font-monospace small"><%= settings.ignore_regions.rawValue %></textarea>
+      <div class="text-muted small mt-1">
+        JSON array of normalized bounding boxes (0.0 to 1.0). Example: <code>[{"name":"Tree Branch","x":0.0,"y":0.0,"w":0.3,"h":0.4}]</code>
+      </div>
+    </div>
+  </div>
+
+  <div class="d-flex justify-content-end gap-3 mb-5">
+    <button type="submit" class="isss-btn isss-btn-primary py-2 px-4">
+      Save All Settings
+    </button>
+  </div>
+</form>
+
+<!-- Manual Retention Execution Card -->
+<div class="isss-card border-danger-subtle">
+  <h5 class="isss-card-title text-danger">Manual Data Retention Cleanup</h5>
+  <p class="text-muted small">
+    Purges events and their associated still/clip media older than the specified retention window immediately. Deletion is logged in the audit trail without retaining deleted footage.
+  </p>
+  <form action="/settings/retention" method="POST" class="d-flex align-items-center gap-3">
+    <% if (locals.csrfToken) { %>
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <% } %>
+    <div style="width: 200px;">
+      <div class="input-group input-group-sm">
+        <input type="number" name="retention_days" class="form-control" value="<%= settings.retention_days.value %>" min="1" max="365">
+        <span class="input-group-text">days</span>
+      </div>
+    </div>
+    <button type="submit" class="isss-btn isss-btn-danger py-1 px-3" onclick="return confirm('Execute retention cleanup now? Old footage will be permanently unlinked.');">
+      Execute Cleanup
+    </button>
+  </form>
+</div>

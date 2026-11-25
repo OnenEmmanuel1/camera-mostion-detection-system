@@ -1,0 +1,341 @@
+<%#
+  Surveillance Viewer — inspired by reference camera UI
+  Variables expected from route:
+    disabled (bool), reason (str)
+    cameraLabel (str), locationLabel (str)
+    isLive (bool)
+    recentEvents (array of event objects)
+    weekDays (array of {dow,num,date,active})
+    timelineDays (array of {label,date,active})
+    timelineGroups (array of {time, clips: [{event_id, media_path, time, detection_type, review_status}]})
+%>
+
+<div class="sv-page">
+
+  <!-- ── Top Tab Bar ──────────────────────────────────────────────────── -->
+  <div class="sv-topbar">
+    <div class="sv-tabs" id="sv-tabs">
+      <button class="sv-tab-pill active" data-tab="all">All Events</button>
+      <button class="sv-tab-pill" data-tab="motion">Motion Detection</button>
+      <button class="sv-tab-pill" data-tab="pir">PIR Sensor</button>
+    </div>
+    <div class="sv-device-nav">
+      <a href="/dashboard">&#8592; Dashboard</a>
+      <span style="color:var(--sv-border)">|</span>
+      <span><%= cameraLabel %></span>
+      <button class="sv-device-next" id="sv-next-device" title="Next camera" style="color:var(--sv-accent);border:none;background:none;cursor:pointer;font-size:0.82rem;font-weight:500;">
+        Next Device
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Body: iconbar + player/timeline + sidebar ───────────────────── -->
+  <div class="sv-body">
+
+    <!-- Left Iconbar -->
+    <div class="sv-iconbar">
+      <a href="/dashboard" class="sv-iconbar-btn active" title="Home">
+        <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      </a>
+      <a href="/live" class="sv-iconbar-btn" title="Live View">
+        <svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="15" rx="2" ry="2"/><polyline points="17 2 12 7 7 2"/></svg>
+      </a>
+      <div class="sv-iconbar-sep"></div>
+      <a href="/events" class="sv-iconbar-btn" title="Events Log">
+        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        <% if (recentEvents && recentEvents.some(e => e.review_status === 'New')) { %>
+          <span class="sv-iconbar-badge"></span>
+        <% } %>
+      </a>
+      <div class="sv-iconbar-sep"></div>
+      <button class="sv-iconbar-btn" id="sv-search-btn" title="Search events">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </button>
+    </div>
+
+    <!-- Centre: Player + Controls + Timeline -->
+    <div class="sv-centre">
+
+      <!-- Tab panel: All Events (default) — video player -->
+      <div class="sv-tab-panel active" id="sv-panel-all">
+
+        <!-- Video Player Area -->
+        <div class="sv-player-wrap" id="sv-player-wrap">
+
+          <% if (disabled) { %>
+            <!-- Camera offline / access restricted overlay -->
+            <div class="sv-offline-overlay">
+              <svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+              <div class="sv-offline-title">Camera Stream Unavailable</div>
+              <div class="sv-offline-sub"><%= reason %></div>
+            </div>
+
+          <% } else { %>
+            <!-- MJPEG Stream -->
+            <img id="sv-stream-img"
+                 src="/live/stream?device_id=<%= cameraDeviceId %>"
+                 alt="Live Camera Stream — <%= cameraLabel %>"
+                 style="width:100%;height:100%;object-fit:contain;"
+                 onerror="svHandleStreamError()">
+
+            <!-- Camera offline overlay (shown by JS on error) -->
+            <div class="sv-offline-overlay" id="sv-offline-overlay" style="display:none;">
+              <svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+              <div class="sv-offline-title" id="sv-offline-title">Camera Disconnected</div>
+              <div class="sv-offline-sub" id="sv-offline-sub">Stream lost — retrying…</div>
+            </div>
+
+            <!-- OSD Top Row -->
+            <div class="sv-osd-top" id="sv-osd-top">
+              <div class="sv-osd-label">
+                <div class="sv-osd-camera"><%= cameraLabel %></div>
+                <div class="sv-osd-ts" id="sv-osd-ts"><%= locationLabel %> &bull; <span id="sv-osd-clock"></span></div>
+              </div>
+              <div class="sv-osd-icons">
+                <!-- Mic / Audio toggle (display only — audio recording is out of scope) -->
+                <button class="sv-osd-icon-btn" title="Audio capture not available" disabled style="opacity:0.4;cursor:not-allowed;">
+                  <svg viewBox="0 0 24 24"><line x1="1" y1="1" x2="23" y2="23"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                </button>
+                <!-- Snapshot -->
+                <button class="sv-osd-icon-btn" id="sv-snapshot-btn" title="Save snapshot">
+                  <svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                </button>
+                <!-- Fullscreen -->
+                <button class="sv-osd-icon-btn" id="sv-fullscreen-btn" title="Fullscreen">
+                  <svg viewBox="0 0 24 24"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- LIVE badge (shown when in live mode) -->
+            <div class="sv-live-badge" id="sv-live-badge">LIVE</div>
+          <% } %>
+        </div>
+
+        <!-- Playback Controls -->
+        <% if (!disabled) { %>
+        <div class="sv-controls" id="sv-controls">
+          <!-- Mute -->
+          <button class="sv-ctrl-btn" title="Audio not available" disabled style="opacity:0.3;cursor:not-allowed;">
+            <svg viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+          </button>
+
+          <!-- Skip back -->
+          <button class="sv-ctrl-btn" id="sv-skip-back" title="Previous event">
+            <svg viewBox="0 0 24 24"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5"/></svg>
+          </button>
+
+          <!-- Rewind 10s (live stream = jump to previous event) -->
+          <button class="sv-ctrl-btn" id="sv-rw10" title="Previous event">
+            <svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.63"/></svg>
+          </button>
+
+          <!-- Play/Pause (live = refresh; event replay = toggle) -->
+          <button class="sv-ctrl-btn sv-play-btn" id="sv-play-btn" title="Stream active">
+            <svg viewBox="0 0 24 24" id="sv-play-icon"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
+          </button>
+
+          <!-- Skip forward -->
+          <button class="sv-ctrl-btn" id="sv-skip-fwd" title="Next event">
+            <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.49-3.63"/></svg>
+          </button>
+
+          <!-- Skip to end -->
+          <button class="sv-ctrl-btn" id="sv-skip-next" title="Next event">
+            <svg viewBox="0 0 24 24"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
+          </button>
+
+          <!-- Progress -->
+          <div class="sv-progress-wrap">
+            <span class="sv-time-label" id="sv-time-current">LIVE</span>
+            <div class="sv-progress" id="sv-progress-bar" title="Stream progress">
+              <div class="sv-progress-fill" id="sv-progress-fill" style="width:100%"></div>
+            </div>
+            <span class="sv-time-label" id="sv-time-total">--:--</span>
+          </div>
+
+          <div class="sv-ctrl-sep"></div>
+
+          <!-- Live button -->
+          <button class="sv-live-btn" id="sv-live-btn" title="Return to live view">Live Video</button>
+
+          <!-- Snapshot download link (hidden) -->
+          <a id="sv-snap-dl" style="display:none"></a>
+        </div>
+        <% } %>
+
+        <!-- Timeline Strip -->
+        <div class="sv-timeline-wrap" id="sv-timeline">
+          <div class="sv-timeline-header">
+            <button class="sv-timeline-date" id="sv-tl-date-btn" type="button" aria-label="Choose timeline date">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              <span id="sv-tl-date-label">Today</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="sv-timeline-actions">
+              <div class="sv-tl-zoom">
+                <button class="sv-tl-icon-btn" id="sv-tl-zoom-out" type="button" title="Zoom out timeline" aria-label="Zoom out timeline"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg></button>
+                <button class="sv-tl-icon-btn" id="sv-tl-zoom-in" type="button" title="Zoom in timeline" aria-label="Zoom in timeline"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></button>
+              </div>
+              <button class="sv-tl-icon-btn" id="sv-tl-cloud-btn" type="button" title="Cloud backup is not configured" aria-label="Cloud backup is not configured" disabled>
+                <svg viewBox="0 0 24 24"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
+              </button>
+              <button class="sv-tl-icon-btn" id="sv-tl-export-btn" type="button" title="Export timeline as CSV" aria-label="Export timeline as CSV">
+                <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Day selector row -->
+          <div class="sv-tl-day-scroll" id="sv-tl-days">
+            <% for (const d of timelineDays) { %>
+              <button class="sv-tl-day <%= d.active ? 'active' : '' %>" data-date="<%= d.date %>">
+                <span class="sv-tl-day-label"><%= d.label %></span>
+                <span class="sv-tl-day-num"><%= d.num %></span>
+              </button>
+            <% } %>
+          </div>
+
+          <!-- Clip groups by time -->
+          <div class="sv-timeline-scroll" id="sv-tl-scroll">
+            <div class="sv-timeline-ruler" id="sv-tl-ruler">
+              <% if (timelineGroups && timelineGroups.length > 0) { %>
+                <% for (const group of timelineGroups) { %>
+                  <div class="sv-tl-tick-group">
+                    <span class="sv-tl-tick-time"><%= group.time %></span>
+                    <div class="sv-clips-strip">
+                      <% for (const clip of group.clips) { %>
+                        <div class="sv-clip-thumb" data-event-id="<%= clip.event_id %>" title="<%= clip.detection_type %> — <%= clip.time %>">
+                          <% if (clip.media_path) { %>
+                            <img src="/media/<%= clip.event_id %>"
+                                 alt="Clip <%= clip.event_id %>"
+                                 onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+                            <div class="sv-clip-no-img" style="display:none;">
+                              <svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                            </div>
+                          <% } else { %>
+                            <div class="sv-clip-no-img">
+                              <svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                            </div>
+                          <% } %>
+                          <span class="sv-clip-label"><%= clip.time %></span>
+                        </div>
+                      <% } %>
+                    </div>
+                    <div class="sv-clip-count"><%= group.clips.length %> clip<%= group.clips.length !== 1 ? 's' : '' %></div>
+                  </div>
+                <% } %>
+              <% } else { %>
+                <div style="color:var(--sv-text-muted);font-size:0.8rem;padding:12px 0;">
+                  No events recorded for this date. Motion in front of the camera will appear here.
+                </div>
+              <% } %>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /sv-panel-all -->
+
+      <!-- Tab panel: Motion Detection -->
+      <div class="sv-tab-panel" id="sv-panel-motion">
+        <div style="padding:24px;color:var(--sv-text-muted);font-size:0.9rem;">
+          <p>Showing only <strong>frame_difference</strong> and <strong>running_average</strong> events.</p>
+          <p>Filter applied — the event feed on the right updates accordingly.</p>
+        </div>
+      </div>
+
+      <!-- Tab panel: PIR Sensor -->
+      <div class="sv-tab-panel" id="sv-panel-pir">
+        <div style="padding:24px;color:var(--sv-text-muted);font-size:0.9rem;">
+          <p>Showing only <strong>pir</strong> and <strong>camera_and_pir</strong> fusion events.</p>
+          <p>Filter applied — the event feed on the right updates accordingly.</p>
+        </div>
+      </div>
+
+    </div><!-- /sv-centre -->
+
+    <!-- ── Right Feed Sidebar ───────────────────────────────────────── -->
+    <div class="sv-sidebar">
+
+      <div class="sv-sidebar-header">
+        <h2 class="sv-sidebar-title">Feed</h2>
+        <div class="sv-sidebar-actions">
+          <button class="sv-sidebar-icon-btn" id="sv-feed-filter-btn" title="Filter feed">
+            <svg viewBox="0 0 24 24"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+          </button>
+          <button class="sv-sidebar-icon-btn" id="sv-feed-refresh-btn" title="Refresh feed">
+            <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Week date strip -->
+      <div class="sv-date-strip" id="sv-week-strip">
+        <% for (const d of weekDays) { %>
+          <button class="sv-date-cell <%= d.active ? 'active' : '' %>" data-date="<%= d.date %>">
+            <span class="sv-date-dow"><%= d.dow %></span>
+            <span class="sv-date-num"><%= d.num %></span>
+          </button>
+        <% } %>
+      </div>
+
+      <!-- Event Feed List -->
+      <div class="sv-feed-list" id="sv-feed-list">
+        <% if (!recentEvents || recentEvents.length === 0) { %>
+          <div class="sv-feed-empty">
+            <svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            <p>No events recorded yet. Start the detection worker to capture motion.</p>
+          </div>
+        <% } else { %>
+          <% for (const evt of recentEvents) { %>
+            <%
+              const evtTime = new Date(evt.start_time);
+              const timeStr = evtTime.toLocaleTimeString('en-US', {hour12: false, hour:'2-digit', minute:'2-digit', second:'2-digit'});
+              const statusClass = evt.review_status ? evt.review_status.toLowerCase() : 'new';
+              const detLabel = evt.detection_type === 'frame_difference' ? 'Frame Diff' :
+                               evt.detection_type === 'running_average' ? 'Running Avg' :
+                               evt.detection_type === 'pir' ? 'PIR Alarm' :
+                               evt.detection_type === 'camera_and_pir' ? 'PIR + Camera' :
+                               evt.detection_type || 'Motion';
+            %>
+            <a href="/events/<%= evt.event_id %>" class="sv-feed-item" data-event-id="<%= evt.event_id %>" data-review-status="<%= evt.review_status || 'New' %>">
+              <span class="sv-feed-dot <%= statusClass %>"></span>
+              <% if (evt.media_path) { %>
+                <div class="sv-feed-thumb">
+                  <img src="/media/<%= evt.event_id %>"
+                       alt="Thumbnail for <%= evt.event_id %>"
+                       onerror="this.parentElement.innerHTML='<svg viewBox=\'0 0 24 24\' style=\'width:20px;height:20px;stroke:var(--sv-text-subtle);fill:none;stroke-width:1.5\'><path d=\'M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z\'/><circle cx=\'12\' cy=\'13\' r=\'4\'/></svg>'">
+                </div>
+              <% } else { %>
+                <div class="sv-feed-thumb-placeholder">
+                  <svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                </div>
+              <% } %>
+              <div class="sv-feed-info">
+                <div class="sv-feed-camera"><%= cameraLabel %></div>
+                <div class="sv-feed-type"><%= detLabel %></div>
+                <div class="sv-feed-time"><%= timeStr %></div>
+              </div>
+            </a>
+          <% } %>
+        <% } %>
+      </div>
+
+    </div><!-- /sv-sidebar -->
+
+  </div><!-- /sv-body -->
+
+</div><!-- /sv-page -->
+
+<!-- Surveillance viewer script (inlined data, then external) -->
+<script>
+  window._svConfig = {
+    isLive: <%= JSON.stringify(isLive) %>,
+    cameraLabel: <%= JSON.stringify(cameraLabel) %>,
+    cameraDeviceId: <%= JSON.stringify(cameraDeviceId) %>,
+    locationLabel: <%= JSON.stringify(locationLabel) %>,
+    disabled: <%= JSON.stringify(disabled) %>
+  };
+</script>
+<script src="/public/js/surveillance.js?v=multi-camera-3"></script>

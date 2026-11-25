@@ -1,0 +1,102 @@
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h4 class="fw-bold m-0">Security Audit Trail</h4>
+    <p class="text-muted small m-0">Immutable record of logins, settings changes, access reviews, and retention tasks</p>
+  </div>
+  <div>
+    <span class="text-muted small">Total Audit Entries: <strong><%= total %></strong></span>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="isss-card p-3 mb-4">
+  <form method="GET" action="/audit" class="row g-2 align-items-end">
+    <div class="col-md-4">
+      <label class="form-label small text-muted m-0">Action Name</label>
+      <input type="text" name="action" class="form-control form-control-sm" placeholder="e.g. UserLogin, SettingsUpdated" value="<%= query.action || '' %>">
+    </div>
+    <div class="col-md-4">
+      <label class="form-label small text-muted m-0">Outcome</label>
+      <select name="outcome" class="form-select form-select-sm">
+        <option value="" <%= !query.outcome ? 'selected' : '' %>>All Outcomes</option>
+        <option value="Success" <%= query.outcome === 'Success' ? 'selected' : '' %>>Success</option>
+        <option value="Denied" <%= query.outcome === 'Denied' ? 'selected' : '' %>>Denied</option>
+        <option value="Failure" <%= query.outcome === 'Failure' ? 'selected' : '' %>>Failure</option>
+      </select>
+    </div>
+    <div class="col-md-4 d-flex gap-2">
+      <button type="submit" class="isss-btn isss-btn-primary w-100 py-1" style="font-size: 0.85rem;">Filter</button>
+      <a href="/audit" class="isss-btn isss-btn-secondary py-1" style="font-size: 0.85rem;">Reset</a>
+    </div>
+  </form>
+</div>
+
+<!-- Table -->
+<div class="isss-card p-0">
+  <% if (logs.length === 0) { %>
+    <div class="p-5 text-center text-muted">
+      No audit records match the selected query.
+    </div>
+  <% } else { %>
+    <div class="table-responsive">
+      <table class="isss-table m-0">
+        <thead>
+          <tr>
+            <th>Timestamp (UTC)</th>
+            <th>Actor / Username</th>
+            <th>Action</th>
+            <th>Outcome</th>
+            <th>IP Address</th>
+            <th>Audit Details</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% for (const log of logs) { %>
+            <tr>
+              <td class="font-monospace small text-muted"><%= log.timestamp %></td>
+              <td>
+                <% if (log.username) { %>
+                  <span class="fw-semibold"><%= log.username %></span>
+                  <span class="badge bg-secondary ms-1" style="font-size: 0.7rem;"><%= log.role %></span>
+                <% } else { %>
+                  <span class="text-muted fst-italic">System / Anonymous</span>
+                <% } %>
+              </td>
+              <td class="font-monospace fw-semibold"><%= log.action %></td>
+              <td>
+                <% if (log.outcome === 'Success') { %>
+                  <span class="badge bg-success-subtle text-success border border-success-subtle">Success</span>
+                <% } else if (log.outcome === 'Denied') { %>
+                  <span class="badge bg-warning-subtle text-warning border border-warning-subtle">Denied</span>
+                <% } else { %>
+                  <span class="badge bg-danger-subtle text-danger border border-danger-subtle">Failure</span>
+                <% } %>
+              </td>
+              <td class="font-monospace small"><%= log.ip_address || 'Internal' %></td>
+              <td class="small font-monospace text-muted" style="max-width: 320px; word-break: break-all;">
+                <%= log.details || '-' %>
+              </td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <% if (totalPages > 1) { %>
+      <div class="p-3 border-top d-flex justify-content-between align-items-center">
+        <div class="small text-muted">
+          Page <strong><%= page %></strong> of <strong><%= totalPages %></strong>
+        </div>
+        <div class="d-flex gap-1">
+          <% if (page > 1) { %>
+            <a href="/audit?page=<%= page - 1 %>&action=<%= query.action || '' %>&outcome=<%= query.outcome || '' %>" class="isss-btn isss-btn-secondary py-1 px-2" style="font-size: 0.8rem;">&laquo; Prev</a>
+          <% } %>
+          <% if (page < totalPages) { %>
+            <a href="/audit?page=<%= page + 1 %>&action=<%= query.action || '' %>&outcome=<%= query.outcome || '' %>" class="isss-btn isss-btn-secondary py-1 px-2" style="font-size: 0.8rem;">Next &raquo;</a>
+          <% } %>
+        </div>
+      </div>
+    <% } %>
+  <% } %>
+</div>

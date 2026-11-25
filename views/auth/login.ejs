@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= pageTitle || 'Sign In - ISSS' %></title>
+  <link rel="stylesheet" href="/public/css/tokens.css?v=console-20261123-4">
+  <link rel="stylesheet" href="/public/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/public/fonts/inter.css">
+  <link rel="stylesheet" href="/public/css/isss.css?v=console-20261124-3">
+</head>
+<body class="isss-login-page">
+
+  <main class="isss-login-layout">
+    <div class="isss-login-photo-wrap">
+      <img class="isss-login-photo" src="https://plus.unsplash.com/premium_photo-1748853983673-6e48199324fe?q=80&amp;w=1374&amp;auto=format&amp;fit=crop&amp;ixlib=rb-4.1.0&amp;ixid=NHwxMjA3fDA%3D" alt="Standing security camera monitoring an area">
+      <p>Reliable camera monitoring, wherever you need it.</p>
+    </div>
+    <div class="isss-card isss-login-card">
+    <div class="text-center mb-4">
+      <img class="isss-login-logo mb-3" src="/public/images/isss-surveillance-logo.svg" alt="ISSS Surveillance logo" width="64" height="64">
+      <h4 class="fw-bold mb-1">ISSS Surveillance</h4>
+      <p class="text-muted small">Edge Node Authentication Gateway</p>
+    </div>
+
+    <% if (locals.errorMessage) { %>
+      <div class="alert alert-danger py-2 small" role="alert">
+        <%= errorMessage %>
+      </div>
+    <% } %>
+
+    <form action="/login" method="POST">
+      <% if (locals.csrfToken) { %>
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <% } %>
+
+      <div class="mb-3">
+        <label for="username" class="form-label small fw-semibold">Username</label>
+        <input type="text" class="form-control" id="username" name="username" required autocomplete="username" autofocus>
+      </div>
+
+      <div class="mb-4">
+        <label for="password" class="form-label small fw-semibold">Password</label>
+        <input type="password" class="form-control" id="password" name="password" required autocomplete="current-password">
+      </div>
+
+      <button type="submit" class="isss-btn isss-btn-primary w-100 py-2">
+        Authenticate
+      </button>
+    </form>
+
+    <div class="mt-4 pt-3 border-top text-center text-muted small">
+      Restricted edge device. All login attempts are security audit-logged.
+    </div>
+    </div>
+  </main>
+
+</body>
+</html>

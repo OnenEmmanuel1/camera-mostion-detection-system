@@ -1,0 +1,13 @@
+<% if (locals.error) { %>
+  <div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
+    <strong>Error:</strong> <%= error %>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+<% } %>
+
+<% if (locals.success || locals.successMessage) { %>
+  <div class="alert alert-success alert-dismissible fade show mb-3" role="alert">
+    <strong>Success:</strong> <%= locals.success || locals.successMessage %>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+<% } %>

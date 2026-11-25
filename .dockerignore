@@ -1,0 +1,10 @@
+node_modules
+.git
+.env
+.env.*
+!.env.example
+data
+media
+evaluation/*.mp4
+evaluation/results-*.json
+npm-debug.log*

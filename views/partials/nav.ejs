@@ -1,0 +1,20 @@
+<div class="isss-sidebar-brand-block">
+  <a href="/dashboard" class="isss-brand">
+    <img class="isss-brand-mark" src="/public/images/isss-surveillance-logo.svg" alt="">
+    <span><strong>ISSS Surveillance</strong><small>Edge security system</small></span>
+  </a>
+</div>
+<p class="isss-sidebar-heading">Views</p>
+<nav class="isss-nav" aria-label="Primary navigation">
+  <a href="/dashboard" class="isss-nav-link <%= activeNav === 'dashboard' ? 'active' : '' %>" <% if (activeNav === 'dashboard') { %>aria-current="page"<% } %>><span>Dashboard</span></a>
+  <a href="/cameras" class="isss-nav-link <%= activeNav === 'cameras' ? 'active' : '' %>" <% if (activeNav === 'cameras') { %>aria-current="page"<% } %>><span>Cameras</span></a>
+  <a href="/events" class="isss-nav-link <%= activeNav === 'events' ? 'active' : '' %>" <% if (activeNav === 'events') { %>aria-current="page"<% } %>><span>Events</span></a>
+  <a href="/live" class="isss-nav-link <%= activeNav === 'live' ? 'active' : '' %>" <% if (activeNav === 'live') { %>aria-current="page"<% } %>><span>Live view</span></a>
+  <% if (currentUser.role === 'Administrator') { %>
+    <p class="isss-sidebar-heading isss-sidebar-heading-spaced">Administration</p>
+    <a href="/settings" class="isss-nav-link <%= activeNav === 'settings' ? 'active' : '' %>" <% if (activeNav === 'settings') { %>aria-current="page"<% } %>><span>Settings</span></a>
+    <a href="/users" class="isss-nav-link <%= activeNav === 'users' ? 'active' : '' %>" <% if (activeNav === 'users') { %>aria-current="page"<% } %>><span>Users</span></a>
+    <a href="/audit" class="isss-nav-link <%= activeNav === 'audit' ? 'active' : '' %>" <% if (activeNav === 'audit') { %>aria-current="page"<% } %>><span>Audit log</span></a>
+  <% } %>
+  <a href="/help" class="isss-nav-link <%= activeNav === 'help' ? 'active' : '' %>" <% if (activeNav === 'help') { %>aria-current="page"<% } %>><span>Help</span></a>
+</nav>

@@ -1,0 +1,65 @@
+/**
+ * ISSS Design Tokens
+ * Flat CSS only, zero gradients, solid color tokens
+ */
+:root {
+  --isss-primary: #4c8dff;
+  --isss-primary-hover: #3c78df;
+  --isss-primary-light: #233754;
+
+  --isss-success: #69d6ad;
+  --isss-success-light: #173a35;
+
+  --isss-warning: #f2bf62;
+  --isss-warning-light: #43351b;
+
+  --isss-danger: #ff858d;
+  --isss-danger-light: #48292e;
+
+  --isss-bg: #171a1f;
+  --isss-surface: #20242a;
+  --isss-border: #343a43;
+  --isss-border-dark: #47505c;
+
+  --isss-text: #e7eaf0;
+  --isss-text-muted: #a0a9b5;
+  --isss-text-subtle: #858f9d;
+
+  --isss-font-family: Arial, Verdana, Helvetica, sans-serif;
+  --isss-font-mono: 'Lucida Console', Consolas, 'Courier New', monospace;
+  --isss-font-overlay: 'Lucida Console', Consolas, 'Courier New', monospace;
+
+  --isss-radius-sm: 6px;
+  --isss-radius: 10px;
+  --isss-radius-lg: 14px;
+
+  --isss-header: #1b1f25;
+  --isss-header-muted: #a0a9b5;
+  --isss-accent-soft: #233754;
+  --isss-shadow: 0 5px 18px rgba(0, 0, 0, 0.16);
+
+  --isss-space-xs: 4px;
+  --isss-space-sm: 8px;
+  --isss-space-md: 16px;
+  --isss-space-lg: 24px;
+  --isss-space-xl: 32px;
+
+  /* ── Surveillance Viewer Dark-Panel Tokens ───────────────────────── */
+  --sv-bg: #1a1c1e;
+  --sv-surface: #242628;
+  --sv-surface-2: #2d2f33;
+  --sv-border: #3c3f43;
+  --sv-text: #e8eaed;
+  --sv-text-muted: #9aa0a6;
+  --sv-text-subtle: #6e7278;
+  --sv-accent: #4a90d9;
+  --sv-accent-hover: #3a7bbf;
+  --sv-live: #e53935;
+  --sv-live-text: #fff;
+  --sv-controls-bg: rgba(26,28,30,0.92);
+  --sv-thumb-radius: 6px;
+  --sv-timeline-h: 72px;
+  --sv-sidebar-w: 300px;
+  --sv-icon-btn: #3c3f43;
+  --sv-icon-btn-hover: #4e5155;
+}

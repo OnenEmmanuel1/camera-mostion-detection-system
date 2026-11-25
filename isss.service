@@ -1,0 +1,21 @@
+[Unit]
+Description=ISSS (IoT-Based Smart Surveillance System) Edge Service
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+Group=video
+WorkingDirectory=/opt/isss
+ExecStart=/usr/bin/npm start
+Restart=on-failure
+RestartSec=5
+KillMode=mixed
+TimeoutStopSec=10
+Environment=NODE_ENV=production
+EnvironmentFile=/opt/isss/.env
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

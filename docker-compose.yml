@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  isss:
+    build: .
+    container_name: isss-surveillance-node
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - APP_ENV=demo
+      - PORT=3000
+      - HOST=0.0.0.0
+      - CAMERA_TYPE=file
+      - CAMERA_PATH=/app/evaluation/synthetic_test.mp4
+      - DEVICE_NAME=ISSS-Docker-Node-01
+      - DEVICE_LOCATION=Facility Perimeter
+      - DISPLAY_TZ=UTC
+    volumes:
+      - ./data:/app/data
+      - ./media:/app/media
+      - ./evaluation:/app/evaluation
+    # For physical USB camera passthrough on Linux hosts, uncomment the following:
+    # devices:
+    #   - /dev/video0:/dev/video0
+    # environment:
+    #   - CAMERA_TYPE=usb
+    #   - CAMERA_PATH=/dev/video0

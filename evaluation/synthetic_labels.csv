@@ -1,0 +1,4 @@
+interval_id,start_time_sec,end_time_sec,type,description
+1,5.0,10.0,true_motion,Moving 100x100 target box left to right
+2,11.0,13.0,distractor,Subtle ambient lighting flicker distractor
+3,15.0,22.0,true_motion,Moving 100x100 target box right to left

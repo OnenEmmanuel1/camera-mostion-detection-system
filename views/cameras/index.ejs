@@ -1,0 +1,113 @@
+<div class="isss-camera-overview" id="isss-camera-overview">
+  <header class="isss-console-heading">
+    <div>
+      <p class="isss-console-eyebrow">Surveillance workspace</p>
+      <h1>Camera overview</h1>
+      <p class="isss-cameras-summary"><strong id="isss-connected-camera-count"><%= connectedCount %></strong> connected <span aria-hidden="true">/</span> <span id="isss-active-camera-count"><%= activeCount %></span> active</p>
+    </div>
+    <a href="/dashboard" class="isss-console-button">Dashboard <span aria-hidden="true">&rarr;</span></a>
+  </header>
+
+  <% if (notice) { %><div class="isss-camera-notice" role="status"><%= notice %></div><% } %>
+  <% if (errorMessage || error) { %><div class="isss-camera-error" role="alert"><%= errorMessage || error %></div><% } %>
+
+  <% const activeCameras = cameras.filter(camera => camera.active); %>
+  <% if (activeCameras.length) { %>
+    <section class="isss-camera-grid" aria-label="Active cameras">
+      <% for (const camera of activeCameras) { %>
+        <article class="isss-camera-tile" data-camera-id="<%= camera.device_id %>">
+          <div class="isss-camera-tile-heading">
+            <div class="isss-camera-tile-title">
+              <h2><%= camera.device_name %></h2>
+              <p><%= camera.location_label || 'Location not set' %> · <%= camera.camera_type === 'url' ? 'Network camera' : camera.camera_type === 'usb' ? 'USB camera' : 'Video file' %></p>
+            </div>
+            <span class="isss-camera-status-chip <%= camera.status.status.toLowerCase() %>" data-camera-status><i></i><%= camera.status.status %></span>
+          </div>
+          <a class="isss-camera-feed" href="/live?device_id=<%= camera.device_id %>" aria-label="Open live view for <%= camera.device_name %>">
+            <% if (cameraStreamsEnabled && camera.has_frame) { %>
+              <img src="/live/stream?device_id=<%= camera.device_id %>" alt="Live feed from <%= camera.device_name %>">
+            <% } else { %>
+              <div class="isss-camera-feed-empty"><strong><%= cameraStreamsEnabled ? 'Waiting for camera feed' : 'Live viewing is restricted' %></strong><span><%= !cameraStreamsEnabled ? 'Live stream access is disabled for this account.' : camera.status.lastError || (camera.status.status === 'Error' ? 'Camera unavailable; check the source settings.' : 'The camera is connecting.') %></span></div>
+            <% } %>
+            <span class="isss-camera-live-label">LIVE</span>
+          </a>
+          <div class="isss-camera-tile-footer">
+            <span data-camera-motion><%= camera.latest_detection && camera.latest_detection.motion ? `Motion · ${camera.latest_detection.changedAreaPercent}%` : 'Monitoring' %></span>
+            <% if (camera.latestEvent) { %>
+              <a href="/events/<%= camera.latestEvent.event_id %>">Latest event <%= new Date(camera.latestEvent.start_time).toLocaleTimeString() %></a>
+            <% } else { %>
+              <span>No events yet</span>
+            <% } %>
+          </div>
+
+          <% if (currentUser && currentUser.role === 'Administrator') { %>
+            <details class="isss-camera-settings">
+              <summary>Camera settings</summary>
+              <form action="/cameras/<%= camera.device_id %>/update" method="POST" class="isss-camera-form">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <label>Camera name<input name="device_name" maxlength="80" required value="<%= camera.device_name %>"></label>
+                <label>Location<input name="location_label" maxlength="120" value="<%= camera.location_label || '' %>"></label>
+                <label>Source type
+                  <select name="camera_type">
+                    <option value="url" <%= camera.camera_type === 'url' ? 'selected' : '' %>>Network stream (RTSP/HTTP)</option>
+                    <option value="usb" <%= camera.camera_type === 'usb' ? 'selected' : '' %>>USB camera</option>
+                    <option value="file" <%= camera.camera_type === 'file' ? 'selected' : '' %>>Video file</option>
+                  </select>
+                </label>
+                <label>Camera URL or device path<input name="camera_path" required value="<%= camera.camera_path %>"></label>
+                <button class="isss-console-button" type="submit">Save and restart camera</button>
+              </form>
+              <form action="/cameras/<%= camera.device_id %>/active" method="POST" class="isss-camera-active-form">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <input type="hidden" name="active" value="0">
+                <button type="submit">Deactivate (keep event history)</button>
+              </form>
+            </details>
+          <% } %>
+        </article>
+      <% } %>
+    </section>
+  <% } else { %>
+    <div class="isss-camera-empty">No active cameras. Add a camera below to start monitoring.</div>
+  <% } %>
+
+  <% if (currentUser && currentUser.role === 'Administrator') { %>
+    <section class="isss-add-camera-panel">
+      <div>
+        <p class="isss-console-eyebrow">Scale your installation</p>
+        <h2>Add a camera</h2>
+        <p>Each active camera runs its own capture and motion detection worker.</p>
+      </div>
+      <form action="/cameras" method="POST" class="isss-camera-form isss-add-camera-form">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <label>Camera name<input name="device_name" maxlength="80" required placeholder="Warehouse entrance"></label>
+        <label>Location<input name="location_label" maxlength="120" placeholder="Building A"></label>
+        <label>Source type
+          <select name="camera_type">
+            <option value="url">Network stream (RTSP/HTTP)</option>
+            <option value="usb">USB camera</option>
+            <option value="file">Video file</option>
+          </select>
+        </label>
+        <label>Camera URL or device path<input name="camera_path" required placeholder="rtsp://camera-address/stream or /dev/video0"></label>
+        <button class="isss-console-button" type="submit">Add and start camera</button>
+      </form>
+      <p class="isss-camera-form-help">RTSP credentials stay on the server. USB cameras must be connected to the server host; Docker deployments also need device passthrough.</p>
+    </section>
+
+    <% const inactiveCameras = cameras.filter(camera => !camera.active); %>
+    <% if (inactiveCameras.length) { %>
+      <section class="isss-inactive-cameras">
+        <h2>Inactive cameras</h2>
+        <% for (const camera of inactiveCameras) { %>
+          <form action="/cameras/<%= camera.device_id %>/active" method="POST">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <span><%= camera.device_name %> · event history retained</span>
+            <input type="hidden" name="active" value="1">
+            <button type="submit">Activate</button>
+          </form>
+        <% } %>
+      </section>
+    <% } %>
+  <% } %>
+</div>
